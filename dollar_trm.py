@@ -1,36 +1,41 @@
-# importar paquetes necesarios
 from datetime import datetime
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
-# ignorar las advertencias
+# ignore warnings
 import warnings
 
 
 warnings.filterwarnings("ignore")
 warnings.simplefilter("ignore")
 
-# convertir table de pagina web en un dataframe.
+# conver web page table into dataframe.
 url = "https://dolar.wilkinsonpc.com.co/divisas/dolar.html"
 html = requests.get(url).content
 
 dfs = pd.read_html(html)
 for df in dfs:
     if "FECHA" in df.columns:
-        # eliminar columnas innecesarias
+        # remove unnecesary columns
         df.drop(["VOLUMEN USD", "TRANSACCIONES",
                 "VOLATILIDAD"], axis=1, inplace=True)
         days = {"lunes ", "martes ", "miércoles ",
                 "jueves ", "viernes ", "sábado ", "domingo "}
-        months = {" de ", " del 2022"}
+        prefixes = {" de ", " del 2022"}
+        months = {"enero": "/01", "febrero": "/02", "marzo": "/03",
+                  "abril": "/04", "mayo": "/05", "junio": "/06",
+                  "julio": "/07", "agosto": "/08", "septiembre": "/09",
+                  "octubre": "/10", "noviembre": "/11", "diciembre": "/12"}
+
         for day in days:
             df["FECHA"] = df.FECHA.str.replace(day, "")
-        for month in months:
-            df["FECHA"] = df.FECHA.str.replace(month, "")
-        df["FECHA"] = df.FECHA.str.replace("agosto", "/08")
-        df["FECHA"] = df.FECHA.str.replace("julio", "/07")
+        for prefix in prefixes:
+            df["FECHA"] = df.FECHA.str.replace(prefix, "")
+            for month in months:
+                df["FECHA"] = df.FECHA.str.replace(month, months[month])
         df["FECHA"] = pd.to_datetime(df["FECHA"], format="%d/%m")
         df["FECHA"] = df["FECHA"].dt.strftime("%m/%d")
+
         signs = {"COP ", "$", ","}
         for sign in signs:
             df["TRM"] = df.TRM.str.replace(sign, "")
